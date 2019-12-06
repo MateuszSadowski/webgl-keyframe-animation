@@ -168,14 +168,23 @@ function init() {
 	}
 
 	// === Load model data ===
+	var filesToLoad = [
+		"models/teapot.obj",
+		"models/bunny.obj"
+	];
+	var models = [];
+	var g_objDoc = []; // The information of OBJ file
+	var g_drawingInfo = []; // The information for drawing 3D model
+
+	//TODO: should it go inside the for loop ??
 	var a_Position = gl.getAttribLocation(program, "a_Position");
 	var a_Normal = gl.getAttribLocation(program, "a_Normal");
 	var a_Color = gl.getAttribLocation(program, "a_Color");
-	var model = initVertexBuffers(gl, program);
-	readOBJFile("models/teapot.obj", model, gl, 1, false);
 
-	var g_objDoc = null; // The information of OBJ file
-	var g_drawingInfo = null; // The information for drawing 3D model
+	for(var i = 0; i < filesToLoad.length; i++) {
+		models.push(initVertexBuffers(gl, program));
+		readOBJFile(filesToLoad[i], models[i], gl, 1, false);
+	}
 
 	function initVertexBuffers(gl, program) {
 		var o = new Object();
@@ -213,11 +222,11 @@ function init() {
 		var objDoc = new OBJDoc(fileName); // Create a OBJDoc object
 		var result = objDoc.parse(fileString, scale, reverse);
 		if (!result) {
-			g_objDoc = null; g_drawingInfo = null;
+			g_objDoc = null; g_drawingInfo = null;	//TODO: might need to change that
 			console.log("OBJ file parsing error.");
 			return;
 		}
-		g_objDoc = objDoc;
+		g_objDoc.push(objDoc);	//TODO: this might cause problems, cuz the files might not get loaded in order
 	}
 
 	function onReadComplete(gl, model, objDoc) {
@@ -315,15 +324,16 @@ function init() {
 		gl.clearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], BACKGROUND_COLOR[3]);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
-			g_drawingInfo = onReadComplete(gl, model, g_objDoc);
-		}
-		if (!g_drawingInfo) return;
-
 		updateMatrices();
 		updateLight();
 
-		gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+		if (!g_drawingInfo[0] && g_objDoc[0] && g_objDoc[0].isMTLComplete()) { // OBJ and all MTLs are available
+			g_drawingInfo.push(onReadComplete(gl, models[0], g_objDoc[0]));
+		}
+		if (!g_drawingInfo[0]) return;
+		console.log(models[0]);
+		console.log(g_drawingInfo[0]);
+		gl.drawElements(gl.TRIANGLES, g_drawingInfo[0].indices.length, gl.UNSIGNED_SHORT, 0);
 	}
 
 	function start() {
