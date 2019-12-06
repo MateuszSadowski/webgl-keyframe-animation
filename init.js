@@ -327,13 +327,18 @@ function init() {
 		updateMatrices();
 		updateLight();
 
-		if (!g_drawingInfo[0] && g_objDoc[0] && g_objDoc[0].isMTLComplete()) { // OBJ and all MTLs are available
-			g_drawingInfo.push(onReadComplete(gl, models[0], g_objDoc[0]));
+		for(var i = 0; i < models.length; i++) {
+			if (!g_drawingInfo[i] && g_objDoc[i] && g_objDoc[i].isMTLComplete()) { // OBJ and all MTLs are available
+				g_drawingInfo.push(onReadComplete(gl, models[i], g_objDoc[i]));
+			}
 		}
-		if (!g_drawingInfo[0]) return;
-		console.log(models[0]);
-		console.log(g_drawingInfo[0]);
-		gl.drawElements(gl.TRIANGLES, g_drawingInfo[0].indices.length, gl.UNSIGNED_SHORT, 0);
+
+		console.log(g_objDoc);
+		console.log(g_drawingInfo);
+
+		if (g_drawingInfo[0]) {
+			gl.drawElements(gl.TRIANGLES, g_drawingInfo[0].indices.length, gl.UNSIGNED_SHORT, 0);
+		}
 	}
 
 	function start() {
