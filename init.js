@@ -38,6 +38,7 @@ function init() {
 	var orbitRadius = 4.5;
 	var orbitAngle = 0;
 	var shouldOrbit = false;
+	var step = 0.0;
 
 	var lightDirection = vec4(0.0, 0.0, -1.0, 0.0);
 	var lightEmission = vec4(1.0, 1.0, 1.0, 1.0);
@@ -187,13 +188,14 @@ function init() {
 		"models/test2.obj"
 	];
 	var models = [];
-
+	var positionAttributes = [];
+	var normalAttributes = [];
 	// Attributes for keyframe 1
-	var a_Position = initAttribute("a_Position");
-	var a_Normal = initAttribute("a_Normal");
+	positionAttributes.push(initAttribute("a_Position1"));
+	normalAttributes.push(initAttribute("a_Normal1"));
 	// Attributes for keyframe 2
-	// var a_Position = initAttribute("a_Position2");
-	// var a_Normal = initAttribute("a_Normal2");
+	positionAttributes.push(initAttribute("a_Position2"));
+	normalAttributes.push(initAttribute("a_Normal2"));
 	// Color attribute is shared 
 	var a_Color = initAttribute("a_Color");
 
@@ -261,12 +263,12 @@ function init() {
 		model.g_drawingInfo = drawingInfo;
 	}
 
-	function switchBuffers(model) {
+	function bindBuffersAndAttributes(model, attribute) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
-		gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(positionAttributes[attribute], 3, gl.FLOAT, false, 0, 0);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.normalBuffer);
-		gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(normalAttributes[attribute], 3, gl.FLOAT, false, 0, 0);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.colorBuffer);
 		gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
@@ -322,6 +324,8 @@ function init() {
 	var umvMatrix = gl.getUniformLocation(program, "u_MV");
 	var umvpMatrix = gl.getUniformLocation(program, "u_MVP");
 
+	var uStep = gl.getUniformLocation(program, "u_Step");
+
 	// === Camera ===
 	var eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle));
 	var at = vec3(0, 0, 0);
@@ -360,14 +364,22 @@ function init() {
 		updateLight();
 
 		for(var i = 0; i < models.length; i++) {
-			if (!models[i].g_drawingInfo && models[i].g_objDoc && models[i].g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
-				onReadComplete(gl, models[i]);
-			}
-			if (models[i].g_drawingInfo) {
-				switchBuffers(models[i]);
-				gl.drawElements(gl.TRIANGLES, models[i].g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+			let model = models[i];
+			if (!model.g_drawingInfo && model.g_objDoc && model.g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
+				onReadComplete(gl, model);
 			}
 		}
+
+		step = (step + 0.01) % 1.0;
+		gl.uniform1f(uStep, step);
+		var keyframe1 = models[0];
+		var keyframe2 = models[1];
+		if (keyframe1.g_drawingInfo && keyframe2.g_drawingInfo) {
+			bindBuffersAndAttributes(keyframe1, 0);
+			bindBuffersAndAttributes(keyframe2, 1);
+			gl.drawElements(gl.TRIANGLES, keyframe1.g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+		}
+		
 	}
 
 	function start() {
