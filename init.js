@@ -183,12 +183,11 @@ function init() {
 
 	// === Load model data ===
 	var filesToLoad = [
-		"models/teapot.obj",
-		"models/bunny.obj"
+		"models/test1.obj",
+		"models/test2.obj"
 	];
 	var models = [];
 
-	//TODO: should it go inside the for loop ??
 	var a_Position = gl.getAttribLocation(program, "a_Position");
 	var a_Normal = gl.getAttribLocation(program, "a_Normal");
 	var a_Color = gl.getAttribLocation(program, "a_Color");
@@ -233,18 +232,18 @@ function init() {
 		var objDoc = new OBJDoc(model.fileName); // Create a OBJDoc object
 		var result = objDoc.parse(fileString, scale, reverse);
 		if (!result) {
-			model.g_objDoc = null; model.g_drawingInfo = null;	//TODO: might need to change that
+			model.g_objDoc = null; model.g_drawingInfo = null;
 			console.log("OBJ file parsing error for file " + model.fileName);
 			return;
 		}
-		model.g_objDoc = objDoc;	//TODO: this might cause problems, cuz the files might not get loaded in order
+		model.g_objDoc = objDoc;
 	}
 
 	function onReadComplete(gl, model) {
 		// Acquire the vertex coordinates and colors from OBJ file
 		var drawingInfo = model.g_objDoc.getDrawingInfo();
 
-		// Write date into the buffer object
+		// Write data into the buffer object
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.vertices, gl.STATIC_DRAW);
 
@@ -259,6 +258,19 @@ function init() {
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, drawingInfo.indices, gl.STATIC_DRAW);
 
 		model.g_drawingInfo = drawingInfo;
+	}
+
+	function switchBuffers(model) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
+		gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, model.normalBuffer);
+		gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, model.colorBuffer);
+		gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indexBuffer);
 	}
 
 	function updateMatrices() {
@@ -289,7 +301,6 @@ function init() {
 		gl.uniform4fv(uMaterialDiffuse, diffuseProduct);
 		var specularProduct = multVecByScalar(specularAll, mult(specularCoefficient, materialSpecular));
 		gl.uniform4fv(uMaterialSpecular, specularProduct);
-
 	}
 
 	function multVecByScalar(scalar, vector) {
@@ -314,7 +325,6 @@ function init() {
 	var eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle));
 	var at = vec3(0, 0, 0);
 	var up = vec3(0, 1, 0);
-	// var pMat = ortho(-2, 2, -2, 2, -50, 50);
 	var pMat = perspective(90, 1, 0.1, 100);
 	var vMat = lookAt(eye, at, up);
 
@@ -343,6 +353,7 @@ function init() {
 				onReadComplete(gl, models[i]);
 			}
 			if (models[i].g_drawingInfo) {
+				switchBuffers(models[i]);
 				gl.drawElements(gl.TRIANGLES, models[i].g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
 			}
 		}
