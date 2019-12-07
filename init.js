@@ -4,6 +4,20 @@ const ORBIT_STEP = 0.01;
 const TRANSLATION_FACTOR = 200;
 const BACKGROUND_COLOR = [0.3921, 0.5843, 0.9294, 1.0];
 
+class Model {
+	fileName;
+	g_objDoc;
+	g_drawingInfo;
+	vertexBuffer;
+	normalBuffer;
+	colorBuffer;
+	indexBuffer;
+
+	constructor(fileName) {
+		this.fileName = fileName;
+	}
+}
+
 function init() {
 	var canvas = document.getElementById("c");
 	var gl = setupWebGL(canvas);
@@ -168,22 +182,27 @@ function init() {
 	}
 
 	// === Load model data ===
+	var filesToLoad = [
+		"models/test1.obj",
+		"models/test2.obj"
+	];
+	var models = [];
+
 	var a_Position = gl.getAttribLocation(program, "a_Position");
 	var a_Normal = gl.getAttribLocation(program, "a_Normal");
 	var a_Color = gl.getAttribLocation(program, "a_Color");
-	var model = initVertexBuffers(gl, program);
-	readOBJFile("models/teapot.obj", model, gl, 1, false);
 
-	var g_objDoc = null; // The information of OBJ file
-	var g_drawingInfo = null; // The information for drawing 3D model
+	for(var i = 0; i < filesToLoad.length; i++) {
+		models[i] = new Model(filesToLoad[i]);
+		initVertexBuffers(models[i]);
+		readOBJFile(models[i], gl, 1, false);
+	}
 
-	function initVertexBuffers(gl, program) {
-		var o = new Object();
-		o.vertexBuffer = createEmptyArrayBuffer(gl, a_Position, 3, gl.FLOAT);
-		o.normalBuffer = createEmptyArrayBuffer(gl, a_Normal, 3, gl.FLOAT);
-		o.colorBuffer = createEmptyArrayBuffer(gl, a_Color, 4, gl.FLOAT);
-		o.indexBuffer = gl.createBuffer();
-		return o;
+	function initVertexBuffers(model) {
+		model.vertexBuffer = createEmptyArrayBuffer(gl, a_Position, 3, gl.FLOAT);
+		model.normalBuffer = createEmptyArrayBuffer(gl, a_Normal, 3, gl.FLOAT);
+		model.colorBuffer = createEmptyArrayBuffer(gl, a_Color, 4, gl.FLOAT);
+		model.indexBuffer = gl.createBuffer();
 	}
 
 	function createEmptyArrayBuffer(gl, a_attribute, num, type) {
@@ -197,34 +216,34 @@ function init() {
 	}
 
 	// Read a file
-	function readOBJFile(fileName, gl, model, scale, reverse) {
+	function readOBJFile(model, gl, scale, reverse) {
 		var request = new XMLHttpRequest();
 		request.onreadystatechange = function () {
 			if (request.readyState === 4 && request.status !== 404) {
-				onReadOBJFile(request.responseText, fileName, gl, model, scale, reverse);
+				onReadOBJFile(request.responseText, model.fileName, gl, model, scale, reverse);
 			}
 		}
-		request.open("GET", fileName, true); // Create a request to get file
+		request.open("GET", model.fileName, true); // Create a request to get file
 		request.send(); // Send the request
 	}
 
 	// OBJ file has been read
-	function onReadOBJFile(fileString, fileName, gl, o, scale, reverse) {
-		var objDoc = new OBJDoc(fileName); // Create a OBJDoc object
+	function onReadOBJFile(fileString, fileName, gl, model, scale, reverse) {
+		var objDoc = new OBJDoc(model.fileName); // Create a OBJDoc object
 		var result = objDoc.parse(fileString, scale, reverse);
 		if (!result) {
-			g_objDoc = null; g_drawingInfo = null;
-			console.log("OBJ file parsing error.");
+			model.g_objDoc = null; model.g_drawingInfo = null;
+			console.log("OBJ file parsing error for file " + model.fileName);
 			return;
 		}
-		g_objDoc = objDoc;
+		model.g_objDoc = objDoc;
 	}
 
-	function onReadComplete(gl, model, objDoc) {
+	function onReadComplete(gl, model) {
 		// Acquire the vertex coordinates and colors from OBJ file
-		var drawingInfo = objDoc.getDrawingInfo();
+		var drawingInfo = model.g_objDoc.getDrawingInfo();
 
-		// Write date into the buffer object
+		// Write data into the buffer object
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.vertices, gl.STATIC_DRAW);
 
@@ -238,7 +257,20 @@ function init() {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indexBuffer);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, drawingInfo.indices, gl.STATIC_DRAW);
 
-		return drawingInfo;
+		model.g_drawingInfo = drawingInfo;
+	}
+
+	function switchBuffers(model) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
+		gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, model.normalBuffer);
+		gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, model.colorBuffer);
+		gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indexBuffer);
 	}
 
 	function updateMatrices() {
@@ -269,7 +301,6 @@ function init() {
 		gl.uniform4fv(uMaterialDiffuse, diffuseProduct);
 		var specularProduct = multVecByScalar(specularAll, mult(specularCoefficient, materialSpecular));
 		gl.uniform4fv(uMaterialSpecular, specularProduct);
-
 	}
 
 	function multVecByScalar(scalar, vector) {
@@ -294,7 +325,6 @@ function init() {
 	var eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle));
 	var at = vec3(0, 0, 0);
 	var up = vec3(0, 1, 0);
-	// var pMat = ortho(-2, 2, -2, 2, -50, 50);
 	var pMat = perspective(90, 1, 0.1, 100);
 	var vMat = lookAt(eye, at, up);
 
@@ -315,15 +345,18 @@ function init() {
 		gl.clearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], BACKGROUND_COLOR[3]);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		if (!g_drawingInfo && g_objDoc && g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
-			g_drawingInfo = onReadComplete(gl, model, g_objDoc);
-		}
-		if (!g_drawingInfo) return;
-
 		updateMatrices();
 		updateLight();
 
-		gl.drawElements(gl.TRIANGLES, g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+		for(var i = 0; i < models.length; i++) {
+			if (!models[i].g_drawingInfo && models[i].g_objDoc && models[i].g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
+				onReadComplete(gl, models[i]);
+			}
+			if (models[i].g_drawingInfo) {
+				switchBuffers(models[i]);
+				gl.drawElements(gl.TRIANGLES, models[i].g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+			}
+		}
 	}
 
 	function start() {
