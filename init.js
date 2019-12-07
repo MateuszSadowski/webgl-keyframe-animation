@@ -210,20 +210,10 @@ function init() {
 	}
 
 	function initVertexBuffers(model) {
-		model.vertexBuffer = createEmptyArrayBuffer(gl, a_Position, 3, gl.FLOAT);
-		model.normalBuffer = createEmptyArrayBuffer(gl, a_Normal, 3, gl.FLOAT);
-		model.colorBuffer = createEmptyArrayBuffer(gl, a_Color, 4, gl.FLOAT);
+		model.vertexBuffer = gl.createBuffer();
+		model.normalBuffer = gl.createBuffer();
+		model.colorBuffer = gl.createBuffer();
 		model.indexBuffer = gl.createBuffer();
-	}
-
-	function createEmptyArrayBuffer(gl, a_attribute, num, type) {
-		var buffer = gl.createBuffer(); // Create a buffer object
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-		gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);
-		//gl.enableVertexAttribArray(a_attribute); // Enable the assignment
-
-		return buffer;
 	}
 
 	// Read a file
