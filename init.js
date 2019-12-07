@@ -32,13 +32,15 @@ function init() {
 	gl.enable(gl.CULL_FACE);
 
 	// === Setup UI ===
-	var translation = [0, -2, 0];
-	var rotation = [0, 0, 0];
+	var translation = [0, 0, 2];
+	var rotation = [24, 0, 0];
 	var scaleValues = [1, 1, 1];
 	var orbitRadius = 4.5;
 	var orbitAngle = 0;
 	var shouldOrbit = false;
 	var step = 0.0;
+	var keyframe1Index = 0;
+	var keyframe2Index = 1;
 
 	var lightDirection = vec4(0.0, 0.0, -1.0, 0.0);
 	var lightEmission = vec4(1.0, 1.0, 1.0, 1.0);
@@ -185,7 +187,10 @@ function init() {
 	// === Load model data ===
 	var filesToLoad = [
 		"models/test1.obj",
-		"models/test2.obj"
+		"models/test2.obj",
+		"models/test3.obj",
+		"models/test4.obj",
+		"models/test5.obj",
 	];
 	var models = [];
 	var positionAttributes = [];
@@ -357,6 +362,11 @@ function init() {
 
 	// === Start app ===
 	function render() {
+		if(models.length < 2) {
+			console.log("Error drawing. At least 2 keyframes must be provided in order to animate");
+			return;
+		}
+
 		gl.clearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], BACKGROUND_COLOR[3]);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -370,10 +380,17 @@ function init() {
 			}
 		}
 
-		step = (step + 0.01) % 1.0;
+		if(step >= 1.0) {
+			step = 0.0;
+			keyframe1Index = (keyframe1Index + 1) % models.length;
+			keyframe2Index = (keyframe2Index + 1) % models.length;
+		} else {
+			step += 0.01;
+		}
 		gl.uniform1f(uStep, step);
-		var keyframe1 = models[0];
-		var keyframe2 = models[1];
+
+		var keyframe1 = models[keyframe1Index];
+		var keyframe2 = models[keyframe2Index];
 		if (keyframe1.g_drawingInfo && keyframe2.g_drawingInfo) {
 			bindBuffersAndAttributes(keyframe1, 0);
 			bindBuffersAndAttributes(keyframe2, 1);
