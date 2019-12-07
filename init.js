@@ -188,9 +188,20 @@ function init() {
 	];
 	var models = [];
 
-	var a_Position = gl.getAttribLocation(program, "a_Position");
-	var a_Normal = gl.getAttribLocation(program, "a_Normal");
-	var a_Color = gl.getAttribLocation(program, "a_Color");
+	// Attributes for keyframe 1
+	var a_Position = initAttribute("a_Position");
+	var a_Normal = initAttribute("a_Normal");
+	// Attributes for keyframe 2
+	// var a_Position = initAttribute("a_Position2");
+	// var a_Normal = initAttribute("a_Normal2");
+	// Color attribute is shared 
+	var a_Color = initAttribute("a_Color");
+
+	function initAttribute(attributeName) {
+		var attribute = gl.getAttribLocation(program, attributeName);
+		gl.enableVertexAttribArray(attribute);
+		return attribute;
+	}
 
 	for(var i = 0; i < filesToLoad.length; i++) {
 		models[i] = new Model(filesToLoad[i]);
@@ -210,7 +221,7 @@ function init() {
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);
-		gl.enableVertexAttribArray(a_attribute); // Enable the assignment
+		//gl.enableVertexAttribArray(a_attribute); // Enable the assignment
 
 		return buffer;
 	}
