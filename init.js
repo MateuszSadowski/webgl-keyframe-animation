@@ -4,6 +4,20 @@ const ORBIT_STEP = 0.01;
 const TRANSLATION_FACTOR = 200;
 const BACKGROUND_COLOR = [0.3921, 0.5843, 0.9294, 1.0];
 
+class Model {
+	fileName;
+	g_objDoc;
+	g_drawingInfo;
+	vertexBuffer;
+	normalBuffer;
+	colorBuffer;
+	indexBuffer;
+
+	constructor(fileName) {
+		this.fileName = fileName;
+	}
+}
+
 function init() {
 	var canvas = document.getElementById("c");
 	var gl = setupWebGL(canvas);
@@ -173,8 +187,6 @@ function init() {
 		"models/bunny.obj"
 	];
 	var models = [];
-	var g_objDoc = []; // The information of OBJ file
-	var g_drawingInfo = []; // The information for drawing 3D model
 
 	//TODO: should it go inside the for loop ??
 	var a_Position = gl.getAttribLocation(program, "a_Position");
@@ -182,17 +194,16 @@ function init() {
 	var a_Color = gl.getAttribLocation(program, "a_Color");
 
 	for(var i = 0; i < filesToLoad.length; i++) {
-		models.push(initVertexBuffers(gl, program));
-		readOBJFile(filesToLoad[i], models[i], gl, 1, false);
+		models[i] = new Model(filesToLoad[i]);
+		initVertexBuffers(models[i]);
+		readOBJFile(models[i], gl, 1, false);
 	}
 
-	function initVertexBuffers(gl, program) {
-		var o = new Object();
-		o.vertexBuffer = createEmptyArrayBuffer(gl, a_Position, 3, gl.FLOAT);
-		o.normalBuffer = createEmptyArrayBuffer(gl, a_Normal, 3, gl.FLOAT);
-		o.colorBuffer = createEmptyArrayBuffer(gl, a_Color, 4, gl.FLOAT);
-		o.indexBuffer = gl.createBuffer();
-		return o;
+	function initVertexBuffers(model) {
+		model.vertexBuffer = createEmptyArrayBuffer(gl, a_Position, 3, gl.FLOAT);
+		model.normalBuffer = createEmptyArrayBuffer(gl, a_Normal, 3, gl.FLOAT);
+		model.colorBuffer = createEmptyArrayBuffer(gl, a_Color, 4, gl.FLOAT);
+		model.indexBuffer = gl.createBuffer();
 	}
 
 	function createEmptyArrayBuffer(gl, a_attribute, num, type) {
@@ -206,32 +217,32 @@ function init() {
 	}
 
 	// Read a file
-	function readOBJFile(fileName, gl, model, scale, reverse) {
+	function readOBJFile(model, gl, scale, reverse) {
 		var request = new XMLHttpRequest();
 		request.onreadystatechange = function () {
 			if (request.readyState === 4 && request.status !== 404) {
-				onReadOBJFile(request.responseText, fileName, gl, model, scale, reverse);
+				onReadOBJFile(request.responseText, model.fileName, gl, model, scale, reverse);
 			}
 		}
-		request.open("GET", fileName, true); // Create a request to get file
+		request.open("GET", model.fileName, true); // Create a request to get file
 		request.send(); // Send the request
 	}
 
 	// OBJ file has been read
-	function onReadOBJFile(fileString, fileName, gl, o, scale, reverse) {
-		var objDoc = new OBJDoc(fileName); // Create a OBJDoc object
+	function onReadOBJFile(fileString, fileName, gl, model, scale, reverse) {
+		var objDoc = new OBJDoc(model.fileName); // Create a OBJDoc object
 		var result = objDoc.parse(fileString, scale, reverse);
 		if (!result) {
-			g_objDoc = null; g_drawingInfo = null;	//TODO: might need to change that
-			console.log("OBJ file parsing error.");
+			model.g_objDoc = null; model.g_drawingInfo = null;	//TODO: might need to change that
+			console.log("OBJ file parsing error for file " + model.fileName);
 			return;
 		}
-		g_objDoc.push(objDoc);	//TODO: this might cause problems, cuz the files might not get loaded in order
+		model.g_objDoc = objDoc;	//TODO: this might cause problems, cuz the files might not get loaded in order
 	}
 
-	function onReadComplete(gl, model, objDoc) {
+	function onReadComplete(gl, model) {
 		// Acquire the vertex coordinates and colors from OBJ file
-		var drawingInfo = objDoc.getDrawingInfo();
+		var drawingInfo = model.g_objDoc.getDrawingInfo();
 
 		// Write date into the buffer object
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
@@ -247,7 +258,7 @@ function init() {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indexBuffer);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, drawingInfo.indices, gl.STATIC_DRAW);
 
-		return drawingInfo;
+		model.g_drawingInfo = drawingInfo;
 	}
 
 	function updateMatrices() {
@@ -328,16 +339,12 @@ function init() {
 		updateLight();
 
 		for(var i = 0; i < models.length; i++) {
-			if (!g_drawingInfo[i] && g_objDoc[i] && g_objDoc[i].isMTLComplete()) { // OBJ and all MTLs are available
-				g_drawingInfo.push(onReadComplete(gl, models[i], g_objDoc[i]));
+			if (!models[i].g_drawingInfo && models[i].g_objDoc && models[i].g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
+				onReadComplete(gl, models[i]);
 			}
-		}
-
-		console.log(g_objDoc);
-		console.log(g_drawingInfo);
-
-		if (g_drawingInfo[0]) {
-			gl.drawElements(gl.TRIANGLES, g_drawingInfo[0].indices.length, gl.UNSIGNED_SHORT, 0);
+			if (models[i].g_drawingInfo) {
+				gl.drawElements(gl.TRIANGLES, models[i].g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+			}
 		}
 	}
 
