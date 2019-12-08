@@ -328,9 +328,19 @@ function init() {
 	var pMat = perspective(90, 1, 0.1, 100);
 	var vMat = lookAt(eye, at, up);
 
-	function orbit() {
+	var then = 0;
+	function orbit(now) {
 		if (shouldOrbit) {
-			eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle));
+			// Convert the time to seconds
+			now *= 0.001;
+			// Subtract the previous time from the current time
+			var deltaTime = now - then;
+			// Remember the current time for the next frame.
+			then = now;
+
+			eye = vec3(orbitRadius * Math.sin(orbitAngle), deltaTime, orbitRadius * Math.cos(orbitAngle))
+			console.log(deltaTime);
+
 			vMat = lookAt(eye, at, up);
 			render();
 			orbitAngle += ORBIT_STEP;
