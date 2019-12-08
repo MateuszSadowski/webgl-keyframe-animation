@@ -399,9 +399,21 @@ function init() {
 		
 	}
 
-	function start() {
+	var curMesh = 0, curMeshf = 0.0;
+	function start(time) {
+		var delta = time - (start.timeOld || time);
+		
 		render();
+
+		//Creating a requestAnimationFrame-based drawing loop 
+		//that increments a counter by a time-dependent amount, 
+		//so that we end up having the same animation speed no matter what the frame rate is
+		if(!isNaN(delta)) curMeshf += 0.05 * delta;
+		curMesh = parseInt(curMeshf);
+		curMesh %= models.length; 
+
 		requestAnimationFrame(start);
+		start.timeOld = time; console.log(time);
 	}
 
 	start();
