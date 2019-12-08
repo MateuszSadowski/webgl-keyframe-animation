@@ -415,7 +415,6 @@ function init() {
 		requestAnimationFrame(start);
 		start.timeOld = time; console.log(time);
 	}
-
 	start();
 }
 
