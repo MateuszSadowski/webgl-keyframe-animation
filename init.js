@@ -20,13 +20,13 @@ class Model {
 }
 
 function init() {
-	var canvas = document.getElementById("c");
-	var gl = setupWebGL(canvas);
+	const canvas = document.getElementById("c");
+	const gl = setupWebGL(canvas);
 	if (!gl) {
 		return;
 	}
 
-	var program = initShaders(gl, "vertex-shader", "fragment-shader");
+	const program = initShaders(gl, "vertex-shader", "fragment-shader");
 	gl.useProgram(program);
 	gl.vBuffer = null;
 	gl.enable(gl.DEPTH_TEST);
@@ -54,10 +54,10 @@ function init() {
 	var diffuseCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
 	var specularCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
 
-	var emissionAll = 1.0;
-	var specularAll = 1.0;
-	var diffuseAll = 1.0;
-	var ambient = 1.0;
+	const emissionAll = 1.0;
+	const specularAll = 1.0;
+	const diffuseAll = 1.0;
+	const ambient = 1.0;
 
 	// https://webglfundamentals.org/webgl/lessons/webgl-3d-orthographic.html
 	webglLessonsUI.setupSlider("#x", { value: translation[0], slide: updatePosition(0), min: -gl.canvas.width, max: gl.canvas.width });
@@ -255,6 +255,39 @@ function init() {
 		model.g_drawingInfo = drawingInfo;
 	}
 
+	function readModels() {
+		for (var i = 0; i < models.length; i++) {
+			let model = models[i];
+			if (!model.g_drawingInfo && model.g_objDoc && model.g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
+				onReadComplete(gl, model);
+			}
+		}
+	}
+
+	function animateAndDraw(deltaTime) {
+		if (step >= 1.0) {
+			step = 0.0;
+			keyframe1Index = (keyframe1Index + 1) % models.length;
+			keyframe2Index = (keyframe2Index + 1) % models.length;
+		} else {
+			step += ANIMATION_STEP * deltaTime;
+		}
+		gl.uniform1f(uStep, step);
+		var keyframe1 = models[keyframe1Index];
+		var keyframe2 = models[keyframe2Index];
+		if (keyframe1.g_drawingInfo && keyframe2.g_drawingInfo) {
+			bindBuffersAndAttributes(keyframe1, 0);
+			bindBuffersAndAttributes(keyframe2, 1);
+			gl.drawElements(gl.TRIANGLES, keyframe1.g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+		}
+	}
+
+	function calculateOrbitAngle(deltaTime) {
+		orbitAngle += ORBIT_STEP * deltaTime;
+		eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle))
+		vMat = lookAt(eye, at, up);
+	}
+
 	function bindBuffersAndAttributes(model, attribute) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
 		gl.vertexAttribPointer(positionAttributes[attribute], 3, gl.FLOAT, false, 0, 0);
@@ -327,6 +360,9 @@ function init() {
 
 	// === Start app ===
 	function render(deltaTime) {
+		gl.clearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], BACKGROUND_COLOR[3]);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
 		if (models.length < 2) {
 			console.log("Error drawing. At least 2 keyframes must be provided in order to animate");
 			return;
@@ -336,41 +372,14 @@ function init() {
 			deltaTime = 0;
 		}
 
-		gl.clearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], BACKGROUND_COLOR[3]);
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-		if (shouldOrbit) {
-			orbitAngle += ORBIT_STEP * deltaTime;
-			eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle))
-			vMat = lookAt(eye, at, up);
+		if(shouldOrbit) {
+			calculateOrbitAngle(deltaTime);
 		}
-
 		updateMatrices();
 		updateLight();
+		readModels();
 
-		for (var i = 0; i < models.length; i++) {
-			let model = models[i];
-			if (!model.g_drawingInfo && model.g_objDoc && model.g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
-				onReadComplete(gl, model);
-			}
-		}
-
-		if (step >= 1.0) {
-			step = 0.0;
-			keyframe1Index = (keyframe1Index + 1) % models.length;
-			keyframe2Index = (keyframe2Index + 1) % models.length;
-		} else {
-			step += ANIMATION_STEP * deltaTime;
-		}
-		gl.uniform1f(uStep, step);
-		var keyframe1 = models[keyframe1Index];
-		var keyframe2 = models[keyframe2Index];
-		if (keyframe1.g_drawingInfo && keyframe2.g_drawingInfo) {
-			bindBuffersAndAttributes(keyframe1, 0);
-			bindBuffersAndAttributes(keyframe2, 1);
-			gl.drawElements(gl.TRIANGLES, keyframe1.g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
-		}
-
+		animateAndDraw(deltaTime);
 	}
 
 	var then = 0;
