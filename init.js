@@ -33,31 +33,31 @@ function init() {
 	gl.enable(gl.CULL_FACE);
 
 	// === Setup UI ===
-	var translation = [0, 0, 2];
-	var rotation = [24, 0, 0];
-	var scaleValues = [1, 1, 1];
-	var orbitRadius = 4.5;
-	var orbitAngle = 0;
-	var shouldOrbit = false;
+	let translation = [0, 0, 2];
+	let rotation = [24, 0, 0];
+	let scaleValues = [1, 1, 1];
+	let orbitRadius = 4.5;
+	let orbitAngle = 0;
+	let shouldOrbit = false;
 	let step = 0.0;
-	var keyframe1Index = 0;
-	var keyframe2Index = 1;
+	let keyframe1Index = 0;
+	let keyframe2Index = 1;
 
-	var lightDirection = vec4(0.0, 0.0, -1.0, 0.0);
-	var lightEmission = vec4(1.0, 1.0, 1.0, 1.0);
-	var lightAmbient = vec4(0.3, 0.3, 0.3, 1.0);
-	var materialDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
-	var materialSpecular = vec4(0.5, 0.5, 0.5, 1.0);
-	var materialShininess = 200.0;
-	var emissionCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
-	var ambientCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
-	var diffuseCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
-	var specularCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
+	let lightDirection = vec4(0.0, 0.0, -1.0, 0.0);
+	let lightEmission = vec4(1.0, 1.0, 1.0, 1.0);
+	let lightAmbient = vec4(0.3, 0.3, 0.3, 1.0);
+	let materialDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
+	let materialSpecular = vec4(0.5, 0.5, 0.5, 1.0);
+	let materialShininess = 200.0;
+	let emissionCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
+	let ambientCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
+	let diffuseCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
+	let specularCoefficient = vec4(1.0, 1.0, 1.0, 1.0);
 
-	const emissionAll = 1.0;
-	const specularAll = 1.0;
-	const diffuseAll = 1.0;
-	const ambient = 1.0;
+	let emissionAll = 1.0;
+	let specularAll = 1.0;
+	let diffuseAll = 1.0;
+	let ambient = 1.0;
 
 	// https://webglfundamentals.org/webgl/lessons/webgl-3d-orthographic.html
 	webglLessonsUI.setupSlider("#x", { value: translation[0], slide: updatePosition(0), min: -gl.canvas.width, max: gl.canvas.width });
@@ -88,7 +88,7 @@ function init() {
 	webglLessonsUI.setupSlider("#shininess", { value: materialShininess, slide: updateMaterialShininess(), min: 0, max: 500, step: 0.01, precision: 2 });
 	webglLessonsUI.setupSlider("#ambient", { value: ambient, slide: updateAmbient(), min: 0, max: 3, step: 0.01, precision: 2 });
 
-	var toggleOrbitButton = document.getElementById("orbit");
+	let toggleOrbitButton = document.getElementById("orbit");
 	toggleOrbitButton.addEventListener("click", () => {
 		shouldOrbit = !shouldOrbit
 	})
@@ -172,16 +172,16 @@ function init() {
 	}
 
 	// === Load model data ===
-	var filesToLoad = [
+	let filesToLoad = [
 		"models/test1.obj",
 		"models/test2.obj",
 		"models/test3.obj",
 		"models/test4.obj",
 		"models/test5.obj",
 	];
-	var models = [];
-	var positionAttributes = [];
-	var normalAttributes = [];
+	let models = [];
+	let positionAttributes = [];
+	let normalAttributes = [];
 	// Attributes for keyframe 1
 	positionAttributes.push(initAttribute("a_Position1"));
 	normalAttributes.push(initAttribute("a_Normal1"));
@@ -189,15 +189,15 @@ function init() {
 	positionAttributes.push(initAttribute("a_Position2"));
 	normalAttributes.push(initAttribute("a_Normal2"));
 	// Color attribute is shared 
-	var a_Color = initAttribute("a_Color");
+	let a_Color = initAttribute("a_Color");
 
 	function initAttribute(attributeName) {
-		var attribute = gl.getAttribLocation(program, attributeName);
+		let attribute = gl.getAttribLocation(program, attributeName);
 		gl.enableVertexAttribArray(attribute);
 		return attribute;
 	}
 
-	for (var i = 0; i < filesToLoad.length; i++) {
+	for (let i = 0; i < filesToLoad.length; i++) {
 		models[i] = new Model(filesToLoad[i]);
 		initVertexBuffers(models[i]);
 		readOBJFile(models[i], gl, 1, false);
@@ -212,7 +212,7 @@ function init() {
 
 	// Read a file
 	function readOBJFile(model, gl, scale, reverse) {
-		var request = new XMLHttpRequest();
+		let request = new XMLHttpRequest();
 		request.onreadystatechange = function () {
 			if (request.readyState === 4 && request.status !== 404) {
 				onReadOBJFile(request.responseText, model.fileName, gl, model, scale, reverse);
@@ -224,8 +224,8 @@ function init() {
 
 	// OBJ file has been read
 	function onReadOBJFile(fileString, fileName, gl, model, scale, reverse) {
-		var objDoc = new OBJDoc(model.fileName); // Create a OBJDoc object
-		var result = objDoc.parse(fileString, scale, reverse);
+		let objDoc = new OBJDoc(model.fileName); // Create a OBJDoc object
+		let result = objDoc.parse(fileString, scale, reverse);
 		if (!result) {
 			model.g_objDoc = null; model.g_drawingInfo = null;
 			console.log("OBJ file parsing error for file " + model.fileName);
@@ -236,7 +236,7 @@ function init() {
 
 	function onReadComplete(gl, model) {
 		// Acquire the vertex coordinates and colors from OBJ file
-		var drawingInfo = model.g_objDoc.getDrawingInfo();
+		let drawingInfo = model.g_objDoc.getDrawingInfo();
 
 		// Write data into the buffer object
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
@@ -256,7 +256,7 @@ function init() {
 	}
 
 	function readModels() {
-		for (var i = 0; i < models.length; i++) {
+		for (let i = 0; i < models.length; i++) {
 			let model = models[i];
 			if (!model.g_drawingInfo && model.g_objDoc && model.g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
 				onReadComplete(gl, model);
@@ -273,8 +273,8 @@ function init() {
 			step += ANIMATION_STEP * deltaTime;
 		}
 		gl.uniform1f(uStep, step);
-		var keyframe1 = models[keyframe1Index];
-		var keyframe2 = models[keyframe2Index];
+		let keyframe1 = models[keyframe1Index];
+		let keyframe2 = models[keyframe2Index];
 		if (keyframe1.g_drawingInfo && keyframe2.g_drawingInfo) {
 			bindBuffersAndAttributes(keyframe1, 0);
 			bindBuffersAndAttributes(keyframe2, 1);
@@ -303,16 +303,16 @@ function init() {
 
 	function updateMatrices() {
 		// Last transformation in multiplication is first to be applied
-		var mMat = mat4();
+		let mMat = mat4();
 		mMat = mult(mMat, translate(translation[0], translation[1], translation[2]));
 		mMat = mult(mMat, rotate(rotation[0], vec3(1, 0, 0)));
 		mMat = mult(mMat, rotate(rotation[1], vec3(0, 1, 0)));
 		mMat = mult(mMat, rotate(rotation[2], vec3(0, 0, 1)));
 		mMat = mult(mMat, scale(scaleValues[0], scaleValues[1], scaleValues[2]));
-		var mvMat = mult(vMat, mMat);
-		var mvpMat = mult(pMat, mvMat);
+		let mvMat = mult(vMat, mMat);
+		let mvpMat = mult(pMat, mvMat);
 
-		var N = normalMatrix(mvMat, false);
+		let N = normalMatrix(mvMat, false);
 		gl.uniformMatrix3fv(uNMatrix, false, flatten(N));
 		gl.uniformMatrix4fv(umvMatrix, false, flatten(mvMat));
 		gl.uniformMatrix4fv(umvpMatrix, false, flatten(mvpMat));
@@ -321,13 +321,13 @@ function init() {
 	function updateLight() {
 		gl.uniform4fv(uLightPosition, lightDirection);
 		gl.uniform1f(uMaterialShininess, materialShininess);
-		var ambientProduct = multVecByScalar(ambient, mult(ambientCoefficient, lightAmbient));
+		let ambientProduct = multVecByScalar(ambient, mult(ambientCoefficient, lightAmbient));
 		gl.uniform4fv(uLightAmbinet, ambientProduct);
-		var emissionProduct = multVecByScalar(emissionAll, mult(emissionCoefficient, lightEmission));
+		let emissionProduct = multVecByScalar(emissionAll, mult(emissionCoefficient, lightEmission));
 		gl.uniform4fv(uLightEmission, emissionProduct);
-		var diffuseProduct = multVecByScalar(diffuseAll, mult(diffuseCoefficient, materialDiffuse));
+		let diffuseProduct = multVecByScalar(diffuseAll, mult(diffuseCoefficient, materialDiffuse));
 		gl.uniform4fv(uMaterialDiffuse, diffuseProduct);
-		var specularProduct = multVecByScalar(specularAll, mult(specularCoefficient, materialSpecular));
+		let specularProduct = multVecByScalar(specularAll, mult(specularCoefficient, materialSpecular));
 		gl.uniform4fv(uMaterialSpecular, specularProduct);
 	}
 
@@ -338,25 +338,25 @@ function init() {
 	}
 
 	// === Uniforms ===
-	var uLightPosition = gl.getUniformLocation(program, "u_LightPosition");
-	var uLightEmission = gl.getUniformLocation(program, "u_LightEmission");
-	var uLightAmbinet = gl.getUniformLocation(program, "u_LightAmbient");
-	var uMaterialDiffuse = gl.getUniformLocation(program, "u_MaterialDiffuse");
-	var uMaterialSpecular = gl.getUniformLocation(program, "u_MaterialSpecular");
-	var uMaterialShininess = gl.getUniformLocation(program, "u_MaterialShininess");
+	let uLightPosition = gl.getUniformLocation(program, "u_LightPosition");
+	let uLightEmission = gl.getUniformLocation(program, "u_LightEmission");
+	let uLightAmbinet = gl.getUniformLocation(program, "u_LightAmbient");
+	let uMaterialDiffuse = gl.getUniformLocation(program, "u_MaterialDiffuse");
+	let uMaterialSpecular = gl.getUniformLocation(program, "u_MaterialSpecular");
+	let uMaterialShininess = gl.getUniformLocation(program, "u_MaterialShininess");
 
-	var uNMatrix = gl.getUniformLocation(program, "u_NormalMatrix");
-	var umvMatrix = gl.getUniformLocation(program, "u_MV");
-	var umvpMatrix = gl.getUniformLocation(program, "u_MVP");
+	let uNMatrix = gl.getUniformLocation(program, "u_NormalMatrix");
+	let umvMatrix = gl.getUniformLocation(program, "u_MV");
+	let umvpMatrix = gl.getUniformLocation(program, "u_MVP");
 
-	var uStep = gl.getUniformLocation(program, "u_Step");
+	let uStep = gl.getUniformLocation(program, "u_Step");
 
 	// === Camera ===
-	var eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle));
-	var at = vec3(0, 0, 0);
-	var up = vec3(0, 1, 0);
-	var pMat = perspective(90, 1, 0.1, 100);
-	var vMat = lookAt(eye, at, up);
+	let eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle));
+	let at = vec3(0, 0, 0);
+	let up = vec3(0, 1, 0);
+	let pMat = perspective(90, 1, 0.1, 100);
+	let vMat = lookAt(eye, at, up);
 
 	// === Start app ===
 	function render(deltaTime) {
@@ -382,7 +382,7 @@ function init() {
 		animateAndDraw(deltaTime);
 	}
 
-	var then = 0;
+	let then = 0;
 	function start(now) {
 		//Creating a requestAnimationFrame-based drawing loop 
 		//that increments a counter by a time-dependent amount, 
