@@ -1,5 +1,7 @@
 ﻿<!DOCTYPE html>
 <html>
+<link type="text/css" href="helpers/style.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
 
 <body>
     <div>
@@ -23,8 +25,8 @@
         <div style="position: absolute; top: 522px">
             <button id="orbit" style="padding: 5px; margin: 5px">Orbit on/off</button>
         </div>
-        <div style="display: flex; flex-direction: row">
-            <div style="padding: 5px">
+        <div style="display: flex; flex-direction: row" id="uiContainerLight">
+            <div style="padding: 5px" id="ui">
                 <p>Light all</p>
                 <div id="emissionAll"></div>
                 <div id="ambient"></div>
@@ -32,25 +34,25 @@
                 <div id="specularAll"></div>
                 <div id="shininess"></div>
             </div>
-            <div style="padding: 5px">
+            <div style="padding: 5px" id="ui">
                 <p>Light direction</p>
                 <div id="dirX"></div>
                 <div id="dirY"></div>
                 <div id="dirZ"></div>
             </div>
-            <div style="padding: 5px">
+            <div style="padding: 5px" id="ui">
                 <p>Light emission</p>
                 <div id="emissionR"></div>
                 <div id="emissionG"></div>
                 <div id="emissionB"></div>
             </div>
-            <div style="padding: 5px">
+            <div style="padding: 5px" id="ui">
                 <p>Light diffuse</p>
                 <div id="diffuseR"></div>
                 <div id="diffuseG"></div>
                 <div id="diffuseB"></div>
             </div>
-            <div style="padding: 5px">
+            <div style="padding: 5px" id="ui">
                 <p>Light specular</p>
                 <div id="specularR"></div>
                 <div id="specularG"></div>
