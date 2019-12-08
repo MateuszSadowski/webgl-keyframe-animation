@@ -1,6 +1,7 @@
 onload = init;
 
-const ORBIT_STEP = 0.01;
+const ORBIT_STEP = 1;
+const ANIMATION_STEP = 1;
 const TRANSLATION_FACTOR = 200;
 const BACKGROUND_COLOR = [0.3921, 0.5843, 0.9294, 1.0];
 
@@ -38,7 +39,7 @@ function init() {
 	var orbitRadius = 4.5;
 	var orbitAngle = 0;
 	var shouldOrbit = false;
-	var step = 0.0;
+	let step = 0.0;
 	var keyframe1Index = 0;
 	var keyframe2Index = 1;
 
@@ -89,98 +90,84 @@ function init() {
 
 	var toggleOrbitButton = document.getElementById("orbit");
 	toggleOrbitButton.addEventListener("click", () => {
-		shouldOrbit = !shouldOrbit;
-		orbit();
+		shouldOrbit = !shouldOrbit
 	})
 
 	function updatePosition(index) {
 		return function (event, ui) {
 			translation[index] = ui.value / TRANSLATION_FACTOR;
-			render();
 		};
 	}
 
 	function updateRotation(index) {
 		return function (event, ui) {
 			rotation[index] = ui.value;
-			render();
 		};
 	}
 
 	function updateScale(index) {
 		return function (event, ui) {
 			scaleValues[index] = ui.value;
-			render();
 		};
 	}
 
 	function updateEmissionAll() {
 		return function (event, ui) {
 			emissionAll = ui.value;
-			render();
 		};
 	}
 
 	function updateSpecularAll() {
 		return function (event, ui) {
 			specularAll = ui.value;
-			render();
 		};
 	}
 
 	function updateDiffuseAll() {
 		return function (event, ui) {
 			diffuseAll = ui.value;
-			render();
 		};
 	}
 
 	function updateAmbient() {
 		return function (event, ui) {
 			ambient = ui.value;
-			render();
 		};
 	}
 
 	function updateLightDirection(index) {
 		return function (event, ui) {
 			lightDirection[index] = ui.value;
-			render();
 		};
 	}
 
 	function updateLightEmission(index) {
 		return function (event, ui) {
 			lightEmission[index] = ui.value;
-			render();
 		};
 	}
 
 	function updateMaterialSpecular(index) {
 		return function (event, ui) {
 			materialSpecular[index] = ui.value;
-			render();
 		};
 	}
 
 	function updateMaterialDiffuse(index) {
 		return function (event, ui) {
 			materialDiffuse[index] = ui.value;
-			render();
 		};
 	}
 
 	function updateMaterialShininess() {
 		return function (event, ui) {
 			materialShininess = ui.value;
-			render();
 		};
 	}
 
 	function updateOrbitRadius() {
 		return function (event, ui) {
 			orbitRadius = ui.value;
-			render();
 		};
 	}
 
@@ -210,7 +197,7 @@ function init() {
 		return attribute;
 	}
 
-	for(var i = 0; i < filesToLoad.length; i++) {
+	for (var i = 0; i < filesToLoad.length; i++) {
 		models[i] = new Model(filesToLoad[i]);
 		initVertexBuffers(models[i]);
 		readOBJFile(models[i], gl, 1, false);
@@ -338,57 +325,44 @@ function init() {
 	var pMat = perspective(90, 1, 0.1, 100);
 	var vMat = lookAt(eye, at, up);
 
-	var then = 0;
-	function orbit(now) {
-		if (shouldOrbit) {
-			// Convert the time to seconds
-			now *= 0.001;
-			// Subtract the previous time from the current time
-			var deltaTime = now - then;
-			// Remember the current time for the next frame.
-			then = now;
-
-			eye = vec3(orbitRadius * Math.sin(orbitAngle), deltaTime, orbitRadius * Math.cos(orbitAngle))
-			console.log(deltaTime);
-
-			vMat = lookAt(eye, at, up);
-			render();
-			orbitAngle += ORBIT_STEP;
-			requestAnimationFrame(orbit);
-		} else {
-			render();
-		}
-	}
-
 	// === Start app ===
-	function render() {
-		if(models.length < 2) {
+	function render(deltaTime) {
+		if (models.length < 2) {
 			console.log("Error drawing. At least 2 keyframes must be provided in order to animate");
 			return;
+		}
+
+		if(isNaN(deltaTime)) {
+			deltaTime = 0;
 		}
 
 		gl.clearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], BACKGROUND_COLOR[3]);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+		if (shouldOrbit) {
+			orbitAngle += ORBIT_STEP * deltaTime;
+			eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle))
+			vMat = lookAt(eye, at, up);
+		}
+
 		updateMatrices();
 		updateLight();
 
-		for(var i = 0; i < models.length; i++) {
+		for (var i = 0; i < models.length; i++) {
 			let model = models[i];
 			if (!model.g_drawingInfo && model.g_objDoc && model.g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
 				onReadComplete(gl, model);
 			}
 		}
 
-		if(step >= 1.0) {
+		if (step >= 1.0) {
 			step = 0.0;
 			keyframe1Index = (keyframe1Index + 1) % models.length;
 			keyframe2Index = (keyframe2Index + 1) % models.length;
 		} else {
-			step += 0.01;
+			step += ANIMATION_STEP * deltaTime;
 		}
 		gl.uniform1f(uStep, step);
-
 		var keyframe1 = models[keyframe1Index];
 		var keyframe2 = models[keyframe2Index];
 		if (keyframe1.g_drawingInfo && keyframe2.g_drawingInfo) {
@@ -396,25 +370,26 @@ function init() {
 			bindBuffersAndAttributes(keyframe2, 1);
 			gl.drawElements(gl.TRIANGLES, keyframe1.g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
 		}
-		
+
 	}
 
-	var curMesh = 0, curMeshf = 0.0;
-	function start(time) {
-		var delta = time - (start.timeOld || time);
-		
-		render();
-
+	var then = 0;
+	function start(now) {
 		//Creating a requestAnimationFrame-based drawing loop 
 		//that increments a counter by a time-dependent amount, 
 		//so that we end up having the same animation speed no matter what the frame rate is
-		if(!isNaN(delta)) curMeshf += 0.05 * delta;
-		curMesh = parseInt(curMeshf);
-		curMesh %= models.length; 
+		// Convert the time to seconds
+		now *= 0.001;
+		// Subtract the previous time from the current time
+		let deltaTime = now - then;
+		// Remember the current time for the next frame.
+		then = now;
+
+		render(deltaTime);
 
 		requestAnimationFrame(start);
-		start.timeOld = time; console.log(time);
 	}
+
 	start();
 }
 
