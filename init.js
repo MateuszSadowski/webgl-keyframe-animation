@@ -32,12 +32,15 @@ function init() {
 	gl.enable(gl.CULL_FACE);
 
 	// === Setup UI ===
-	var translation = [0, -2, 0];
-	var rotation = [0, 0, 0];
+	var translation = [0, 0, 2];
+	var rotation = [24, 0, 0];
 	var scaleValues = [1, 1, 1];
 	var orbitRadius = 4.5;
 	var orbitAngle = 0;
 	var shouldOrbit = false;
+	var step = 0.0;
+	var keyframe1Index = 0;
+	var keyframe2Index = 1;
 
 	var lightDirection = vec4(0.0, 0.0, -1.0, 0.0);
 	var lightEmission = vec4(1.0, 1.0, 1.0, 1.0);
@@ -184,13 +187,28 @@ function init() {
 	// === Load model data ===
 	var filesToLoad = [
 		"models/test1.obj",
-		"models/test2.obj"
+		"models/test2.obj",
+		"models/test3.obj",
+		"models/test4.obj",
+		"models/test5.obj",
 	];
 	var models = [];
+	var positionAttributes = [];
+	var normalAttributes = [];
+	// Attributes for keyframe 1
+	positionAttributes.push(initAttribute("a_Position1"));
+	normalAttributes.push(initAttribute("a_Normal1"));
+	// Attributes for keyframe 2
+	positionAttributes.push(initAttribute("a_Position2"));
+	normalAttributes.push(initAttribute("a_Normal2"));
+	// Color attribute is shared 
+	var a_Color = initAttribute("a_Color");
 
-	var a_Position = gl.getAttribLocation(program, "a_Position");
-	var a_Normal = gl.getAttribLocation(program, "a_Normal");
-	var a_Color = gl.getAttribLocation(program, "a_Color");
+	function initAttribute(attributeName) {
+		var attribute = gl.getAttribLocation(program, attributeName);
+		gl.enableVertexAttribArray(attribute);
+		return attribute;
+	}
 
 	for(var i = 0; i < filesToLoad.length; i++) {
 		models[i] = new Model(filesToLoad[i]);
@@ -199,20 +217,10 @@ function init() {
 	}
 
 	function initVertexBuffers(model) {
-		model.vertexBuffer = createEmptyArrayBuffer(gl, a_Position, 3, gl.FLOAT);
-		model.normalBuffer = createEmptyArrayBuffer(gl, a_Normal, 3, gl.FLOAT);
-		model.colorBuffer = createEmptyArrayBuffer(gl, a_Color, 4, gl.FLOAT);
+		model.vertexBuffer = gl.createBuffer();
+		model.normalBuffer = gl.createBuffer();
+		model.colorBuffer = gl.createBuffer();
 		model.indexBuffer = gl.createBuffer();
-	}
-
-	function createEmptyArrayBuffer(gl, a_attribute, num, type) {
-		var buffer = gl.createBuffer(); // Create a buffer object
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-		gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);
-		gl.enableVertexAttribArray(a_attribute); // Enable the assignment
-
-		return buffer;
 	}
 
 	// Read a file
@@ -260,12 +268,12 @@ function init() {
 		model.g_drawingInfo = drawingInfo;
 	}
 
-	function switchBuffers(model) {
+	function bindBuffersAndAttributes(model, attribute) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.vertexBuffer);
-		gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(positionAttributes[attribute], 3, gl.FLOAT, false, 0, 0);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.normalBuffer);
-		gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(normalAttributes[attribute], 3, gl.FLOAT, false, 0, 0);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, model.colorBuffer);
 		gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
@@ -321,6 +329,8 @@ function init() {
 	var umvMatrix = gl.getUniformLocation(program, "u_MV");
 	var umvpMatrix = gl.getUniformLocation(program, "u_MVP");
 
+	var uStep = gl.getUniformLocation(program, "u_Step");
+
 	// === Camera ===
 	var eye = vec3(orbitRadius * Math.sin(orbitAngle), 0, orbitRadius * Math.cos(orbitAngle));
 	var at = vec3(0, 0, 0);
@@ -352,6 +362,11 @@ function init() {
 
 	// === Start app ===
 	function render() {
+		if(models.length < 2) {
+			console.log("Error drawing. At least 2 keyframes must be provided in order to animate");
+			return;
+		}
+
 		gl.clearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], BACKGROUND_COLOR[3]);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -359,14 +374,29 @@ function init() {
 		updateLight();
 
 		for(var i = 0; i < models.length; i++) {
-			if (!models[i].g_drawingInfo && models[i].g_objDoc && models[i].g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
-				onReadComplete(gl, models[i]);
-			}
-			if (models[i].g_drawingInfo) {
-				switchBuffers(models[i]);
-				gl.drawElements(gl.TRIANGLES, models[i].g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+			let model = models[i];
+			if (!model.g_drawingInfo && model.g_objDoc && model.g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
+				onReadComplete(gl, model);
 			}
 		}
+
+		if(step >= 1.0) {
+			step = 0.0;
+			keyframe1Index = (keyframe1Index + 1) % models.length;
+			keyframe2Index = (keyframe2Index + 1) % models.length;
+		} else {
+			step += 0.01;
+		}
+		gl.uniform1f(uStep, step);
+
+		var keyframe1 = models[keyframe1Index];
+		var keyframe2 = models[keyframe2Index];
+		if (keyframe1.g_drawingInfo && keyframe2.g_drawingInfo) {
+			bindBuffersAndAttributes(keyframe1, 0);
+			bindBuffersAndAttributes(keyframe2, 1);
+			gl.drawElements(gl.TRIANGLES, keyframe1.g_drawingInfo.indices.length, gl.UNSIGNED_SHORT, 0);
+		}
+		
 	}
 
 	function start() {

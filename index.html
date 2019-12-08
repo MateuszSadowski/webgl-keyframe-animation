@@ -94,26 +94,29 @@
     </script>
 
     <script id="vertex-shader" type="x-shader/x-vertex">
-        attribute vec3 a_Position;
-        attribute vec3 a_Normal;
+        attribute vec3 a_Position1;
+        attribute vec3 a_Normal1;
+        attribute vec3 a_Position2;
+        attribute vec3 a_Normal2;
         attribute vec4 a_Color;
 
         uniform mat4 u_MVP;
         uniform mat4 u_MV;
         uniform mat3 u_NormalMatrix;
         uniform vec4 u_LightPosition;
+        uniform float u_Step;
 
         varying vec4 v_Color;
         varying vec3 v_DirectionTowardLight;
         varying vec3 v_DirectionTowardObserver;
         varying vec3 v_NormalEyeSpace;
         void main() {
-            vec4 position = vec4(a_Position, 1.0);
+            vec4 position = mix(vec4(a_Position1, 1.0), vec4(a_Position2, 1.0), u_Step);
             vec3 positionEyeSpace = (u_MV * position).xyz;
             vec3 lightPositionEyeSpace = u_LightPosition.xyz;  // TODO: should it be (u_MV * u_LightPosition).xyz ?
             v_DirectionTowardLight = u_LightPosition.w == 0.0 ? -lightPositionEyeSpace : lightPositionEyeSpace - positionEyeSpace;
             v_DirectionTowardObserver = -positionEyeSpace;
-            v_NormalEyeSpace = u_NormalMatrix * a_Normal;
+            v_NormalEyeSpace = u_NormalMatrix * mix(a_Normal1, a_Normal2, u_Step);  // TODO: do you need to normalize after mixing ?
             
             v_Color = a_Color;
             gl_Position = u_MVP * position;
