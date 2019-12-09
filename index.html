@@ -118,7 +118,7 @@
             vec3 lightPositionEyeSpace = u_LightPosition.xyz;  // TODO: should it be (u_MV * u_LightPosition).xyz ?
             v_DirectionTowardLight = u_LightPosition.w == 0.0 ? -lightPositionEyeSpace : lightPositionEyeSpace - positionEyeSpace;
             v_DirectionTowardObserver = -positionEyeSpace;
-            v_NormalEyeSpace = u_NormalMatrix * mix(a_Normal1, a_Normal2, u_Step);  // TODO: do you need to normalize after mixing ?
+            v_NormalEyeSpace = u_NormalMatrix * normalize(mix(a_Normal1, a_Normal2, u_Step));
             
             v_Color = a_Color;
             gl_Position = u_MVP * position;
