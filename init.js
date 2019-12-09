@@ -173,11 +173,9 @@ function init() {
 
 	// === Load model data ===
 	let filesToLoad = [
-		"models/test1.obj",
-		"models/test2.obj",
-		"models/test3.obj",
-		"models/test4.obj",
-		"models/test5.obj",
+		"models/test6.obj",
+		"models/test7.obj",
+		"models/test8.obj"
 	];
 	let models = [];
 	let positionAttributes = [];
