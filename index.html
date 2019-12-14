@@ -23,7 +23,17 @@
             </div>
         </div>
         <div style="position: absolute; top: 522px">
-            <button id="orbit" style="padding: 5px; margin: 5px">Orbit on/off</button>
+            <div style="display: flex; flex-direction: row">
+                <button id="orbit" style="padding: 5px; margin: 5px">Orbit on/off</button>
+                <span class="radio-box">
+                    <input type="radio" id="animation-1" name="animation" value="animation1" checked="checked">
+                    <label for="animation-1">Torus</label>
+                </span>
+                <span class="radio-box">
+                    <input type="radio" id="animation-2" name="animation" value="animation2">
+                    <label for="animation-2">Pipe</label>
+                </span>
+            </div>
         </div>
         <div style="display: flex; flex-direction: row" id="uiContainerLight">
             <div style="padding: 5px" id="ui">

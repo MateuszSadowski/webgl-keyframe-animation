@@ -5,6 +5,21 @@ const ANIMATION_STEP = 1;
 const TRANSLATION_FACTOR = 200;
 const BACKGROUND_COLOR = [0.3921, 0.5843, 0.9294, 1.0];
 
+class Animation {
+	fileNames;
+	isLoaded;
+	models;
+	keyframe1Index;
+	keyframe2Index;
+
+	constructor(fileNames) {
+		this.fileNames = fileNames;
+		this.isLoaded = false;
+		this.models = [];
+		this.keyframe1Index = 0;
+		this.keyframe2Index = 1;
+	}
+}
 class Model {
 	fileName;
 	g_objDoc;
@@ -32,6 +47,24 @@ function init() {
 	gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
 
+	// available animations - new can be added in the analogous format, filenames can be arbitrary
+	let animations = [
+		animation1 = new Animation([
+			"models/test5.obj",
+			"models/test6.obj",
+			"models/test7.obj",
+			"models/test8.obj"
+		]),
+		animation2 = new Animation([
+			"models/arm1.obj",
+			"models/arm2.obj",
+			"models/arm3.obj",
+			"models/arm4.obj",
+			"models/arm5.obj",
+			"models/arm6.obj"
+		])
+	];
+
 	// === Setup UI ===
 	let translation = [0, 0, 2];
 	let rotation = [24, 0, 0];
@@ -40,10 +73,8 @@ function init() {
 	let orbitAngle = 0;
 	let shouldOrbit = false;
 	let step = 0.0;
-	let keyframe1Index = 0;
-	let keyframe2Index = 1;
 
-	let lightDirection = vec4(0.0, 0.0, -1.0, 0.0);
+	let lightDirection = vec4(-3.17, 0.0, -1.0, 0.0);
 	let lightEmission = vec4(1.0, 1.0, 1.0, 1.0);
 	let lightAmbient = vec4(0.3, 0.3, 0.3, 1.0);
 	let materialDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
@@ -87,6 +118,15 @@ function init() {
 	webglLessonsUI.setupSlider("#specularAll", { value: specularAll, slide: updateSpecularAll(), min: 0, max: 3, step: 0.01, precision: 2 });
 	webglLessonsUI.setupSlider("#shininess", { value: materialShininess, slide: updateMaterialShininess(), min: 0, max: 500, step: 0.01, precision: 2 });
 	webglLessonsUI.setupSlider("#ambient", { value: ambient, slide: updateAmbient(), min: 0, max: 3, step: 0.01, precision: 2 });
+
+    //https://stackoverflow.com/questions/8922002/attach-event-listener-through-javascript-to-radio-button
+    document.addDelegatedListener("click", "input[type='radio']", function (event) {
+        if (document.querySelector('input[name=animation]:checked').value === "animation1") {
+			currentAnimation = animations[0];
+        } else if (document.querySelector('input[name=animation]:checked').value === "animation2") {
+			currentAnimation = animations[1];
+        }
+    });
 
 	let toggleOrbitButton = document.getElementById("orbit");
 	toggleOrbitButton.addEventListener("click", () => {
@@ -172,12 +212,7 @@ function init() {
 	}
 
 	// === Load model data ===
-	let filesToLoad = [
-		"models/test6.obj",
-		"models/test7.obj",
-		"models/test8.obj"
-	];
-	let models = [];
+	let currentAnimation = animations[0];
 	let positionAttributes = [];
 	let normalAttributes = [];
 	// Attributes for keyframe 1
@@ -193,12 +228,6 @@ function init() {
 		let attribute = gl.getAttribLocation(program, attributeName);
 		gl.enableVertexAttribArray(attribute);
 		return attribute;
-	}
-
-	for (let i = 0; i < filesToLoad.length; i++) {
-		models[i] = new Model(filesToLoad[i]);
-		initVertexBuffers(models[i]);
-		readOBJFile(models[i], gl, 1, false);
 	}
 
 	function initVertexBuffers(model) {
@@ -254,8 +283,8 @@ function init() {
 	}
 
 	function readModels() {
-		for (let i = 0; i < models.length; i++) {
-			let model = models[i];
+		for (let i = 0; i < currentAnimation.models.length; i++) {
+			let model = currentAnimation.models[i];
 			if (!model.g_drawingInfo && model.g_objDoc && model.g_objDoc.isMTLComplete()) { // OBJ and all MTLs are available
 				onReadComplete(gl, model);
 			}
@@ -263,16 +292,17 @@ function init() {
 	}
 
 	function animateAndDraw(deltaTime) {
+		let models = currentAnimation.models;
 		if (step >= 1.0) {
 			step = 0.0;
-			keyframe1Index = (keyframe1Index + 1) % models.length;
-			keyframe2Index = (keyframe2Index + 1) % models.length;
+			currentAnimation.keyframe1Index = (currentAnimation.keyframe1Index + 1) % models.length;
+			currentAnimation.keyframe2Index = (currentAnimation.keyframe2Index + 1) % models.length;
 		} else {
 			step += ANIMATION_STEP * deltaTime;
 		}
 		gl.uniform1f(uStep, step);
-		let keyframe1 = models[keyframe1Index];
-		let keyframe2 = models[keyframe2Index];
+		let keyframe1 = models[currentAnimation.keyframe1Index ];
+		let keyframe2 = models[currentAnimation.keyframe2Index];
 		if (keyframe1.g_drawingInfo && keyframe2.g_drawingInfo) {
 			bindBuffersAndAttributes(keyframe1, 0);
 			bindBuffersAndAttributes(keyframe2, 1);
@@ -335,6 +365,22 @@ function init() {
 		});
 	}
 
+	function loadAnimations() {
+		for(let k = 0; k < animations.length; k++) {
+			if(animations[k].isLoaded) {
+				continue;
+			}
+
+			let animation = animations[k];
+			for (let i = 0; i < animation.fileNames.length; i++) {
+				animation.models[i] = new Model(animation.fileNames[i]);
+				initVertexBuffers(animation.models[i]);
+				readOBJFile(animation.models[i], gl, 1, false);
+			}
+			animations[k].isLoaded = true;
+		} 
+	}
+
 	// === Uniforms ===
 	let uLightPosition = gl.getUniformLocation(program, "u_LightPosition");
 	let uLightEmission = gl.getUniformLocation(program, "u_LightEmission");
@@ -361,7 +407,9 @@ function init() {
 		gl.clearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], BACKGROUND_COLOR[3]);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		if (models.length < 2) {
+		loadAnimations();
+
+		if (currentAnimation.models.length < 2) {
 			console.log("Error drawing. At least 2 keyframes must be provided in order to animate");
 			return;
 		}
@@ -373,6 +421,7 @@ function init() {
 		if(shouldOrbit) {
 			calculateOrbitAngle(deltaTime);
 		}
+		
 		updateMatrices();
 		updateLight();
 		readModels();
@@ -406,4 +455,13 @@ function init() {
 */
 function setupWebGL(canvas) {
 	return WebGLUtils.setupWebGL(canvas);
+}
+
+//https://stackoverflow.com/questions/8922002/attach-event-listener-through-javascript-to-radio-button
+window.EventTarget.prototype.addDelegatedListener = function (type, delegateSelector, listener) {
+    this.addEventListener(type, function (event) {
+        if (event.target && event.target.matches(delegateSelector)) {
+            listener.call(event.target, event)
+        }
+    });
 }
