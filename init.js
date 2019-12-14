@@ -59,9 +59,7 @@ function init() {
 			"models/arm1.obj",
 			"models/arm2.obj",
 			"models/arm3.obj",
-			"models/arm4.obj",
-			"models/arm5.obj",
-			"models/arm6.obj"
+			"models/arm4.obj"
 		])
 	];
 
